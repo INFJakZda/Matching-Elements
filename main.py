@@ -7,7 +7,7 @@ if __name__ == "__main__":
         exit(1)
 
     data_path = os.path.abspath(sys.argv[1])
-    N = (int(sys.argv[2]))
+    N = int(sys.argv[2])
     
-    print(data_path)
-    print(N)
+    for n in range(N):
+        print(3)    
