@@ -101,7 +101,7 @@ def score_similarity(pair):
 
 def rank_pairs(pairs):
     scores = pool.map(score_similarity, pairs)
-    return sorted(scores, key=lambda x: -x[1])[0:5]
+    return sorted(scores, key=lambda x: -x[1])
 
 pair_scores = {}
 imgs_rotations = {}
