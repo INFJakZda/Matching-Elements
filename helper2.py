@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 import re
-import itertools
+from itertools import product
 from multiprocessing.dummy import Pool as ThreadPool 
 
 import cv2
@@ -18,47 +18,51 @@ class ImageClassifier:
     def __init__(self, N, data_path, no_threads):
         self.N = N
         self.data_path = data_path
-        self.images_path = list(map(lambda n: os.path.join(self.data_path, str(n) + ".png"), np.arange(0, self.N)))
-        self.pair_scores = {}       #TODO
-        self.imgs_rotations = {}    #TODO
-        self.pool = ThreadPool(no_threads)   #TODO
+        self.scores_pair = {}
+        self.images_up_and_down = {}
+        self.pool = ThreadPool(no_threads)
 
     def process_images(self):
-        for image_path in self.images_path:
-            candidates = set(self.images_path)      #TODO
-            candidates.remove(image_path)
-            possible_pairs = list(itertools.product([image_path], candidates)) #TODO
-            rank = np.array(self.rank_pairs(possible_pairs)) #TODO
-            rank_f = list(map(lambda x: re.search('(\d+).png', x[1]).group(1), rank[:,0])) #TODO
-            print(' '.join(rank_f))
+        for image_no in range(self.N):
+            # indexes of all images without image_no
+            images_indexes = np.delete(np.arange(self.N), image_no)
+            # pairs - image_no with all others
+            pairs = list(product([image_no], images_indexes))
+            # get ranking
+            ranking = np.array(self.pairs_ranking(pairs))
+            print_ranking = list(map(lambda x: str(x[1]), ranking[:,0]))
+            print(' '.join(print_ranking))
 
-    def rank_pairs(self, pairs):
-        scores = self.pool.map(self.score_similarity, pairs)
-        return sorted(scores, key=lambda x: -x[1])
+    def pairs_ranking(self, pairs):
+        # multiprocessing result comparision
+        results = self.pool.map(self.result_comparison, pairs)
+        # return sorted tuples ((pair), result)
+        return sorted(results, key = lambda x: x[1])
 
-    def score_similarity(self, pair):
-        return (pair, self.score_pair(pair[0],pair[1]))
+    def result_comparison(self, pair):
+        if (pair[1], pair[0]) in self.scores_pair:
+            return (pair, self.scores_pair[(pair[1], pair[0])])
+        # get images path
+        img1_path = os.path.join(self.data_path, str(pair[0]) + ".png")
+        img2_path = os.path.join(self.data_path, str(pair[1]) + ".png")
 
-    def score_pair(self, img1_path, img2_path):
-        if (img2_path,img1_path) in self.pair_scores:
-            return self.pair_scores[(img2_path,img1_path)]
-        # start = time.time()
-        l = self.get_img_contours(img1_path)["ok"]
-        r = self.get_img_contours(img2_path)["ud"]
-        score = self.calc_shape_context_distance(l, r) * -1
-        self.pair_scores[(img1_path,img2_path)] = score
-        return score
+        img1 = self.prepare_image(img1_path)["ok"]
+        img2 = self.prepare_image(img2_path)["ud"]
 
-    def get_img_contours(self, img_path):
-        if img_path not in self.imgs_rotations:
+        score = self.result_calculation(img1, img2)
+        self.scores_pair[pair] = score
+        return (pair, score)
+
+    def prepare_image(self, img_path):
+        if img_path not in self.images_up_and_down:
             img = io.imread(img_path)
             img = self.crop_to_object(img)
             ok, ud = self.rotate_basis(img)
-            self.imgs_rotations[img_path] = {
+            self.images_up_and_down[img_path] = {
                 "ok": self.get_contours(ok), 
                 "ud": self.get_contours(ud)
             }
-        return self.imgs_rotations[img_path]
+        return self.images_up_and_down[img_path]
 
     def get_contours(self, img):
         img = pad(img,(5,5),'constant', constant_values=(0, 0))
@@ -91,7 +95,7 @@ class ImageClassifier:
         else:
             return img.copy(), np.rot90(img,2).copy()
 
-    def calc_shape_context_distance(self, img_1, img_2):
+    def result_calculation(self, img_1, img_2):
         sd = cv2.createShapeContextDistanceExtractor()
         try:
             d2 = sd.computeDistance(img_1,img_2)

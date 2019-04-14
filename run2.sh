@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 helper.py $@
+python3 helper2.py $@
