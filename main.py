@@ -18,10 +18,16 @@ class ImageClassifier:
     def __init__(self, N, data_path, no_threads):
         self.N = N
         self.data_path = data_path
+        # results of pairs of objects
         self.scores_pair = {}
+        # images normally and reversed { img1: [up, down], ...}
         self.images_up_and_down = {}
-        self.pool = ThreadPool(no_threads)
+        # const for recognize images in images_up_and_down dict 
+        self.IMG_UP = "img_up"
+        self.IMG_DOWN = "img_down"
 
+        self.pool = ThreadPool(no_threads)
+        
     def process_images(self):
         for image_no in range(self.N):
             # indexes of all images without image_no
@@ -46,14 +52,31 @@ class ImageClassifier:
         img1_path = os.path.join(self.data_path, str(pair[0]) + ".png")
         img2_path = os.path.join(self.data_path, str(pair[1]) + ".png")
 
-        # img1 = self.prepare_image(img1_path)["ok"]
-        # img2 = self.prepare_image(img2_path)["ud"]
+        img1 = self.prepare_image(img1_path)[self.IMG_UP]
+        img2 = self.prepare_image(img2_path)[self.IMG_DOWN]
 
-        # score = self.result_calculation(img1, img2)
-        score = 0
+        score = self.result_calculation(img1, img2)
         self.scores_pair[pair] = score
-        return (pair, score)        
-        
+        return (pair, score)
+
+    def prepare_image(self, img_path):
+        # if there is calculated image return it
+        if img_path in self.images_up_and_down:
+            return self.images_up_and_down[img_path]
+
+        # read image
+        img = io.imread(img_path)
+        # find a basis of the image and set image to it
+        img = self.crop_to_object(img)
+        # rotate image for feature comparision
+        img_up, img_down = self.rotate_basis(img)
+        # save the results for feature use
+        self.images_up_and_down[img_path] = {
+            self.IMG_UP: self.get_contours(img_up), 
+            self.IMG_DOWN: self.get_contours(img_down)
+        }
+        return self.images_up_and_down[img_path]
+           
     
 if __name__ == "__main__":
     # number of threads on your computer
