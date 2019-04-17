@@ -118,6 +118,23 @@ class ImageClassifier:
             return img.copy(), np.rot90(img,2).copy()
 
     def result_calculation(self, img1, img1_nr, img2, img2_nr):
+        sum_of_amplitude = 0
+        last = 0
+        for i in range(img1.shape[1]):
+            white = 0
+            for j in range(img1.shape[0]):
+                if img1[j][i] != 0:
+                    white += img1[j][i]
+                if img2[j][i] != 0:
+                    white += img2[j][i]
+            if last == 0:
+                last = white
+            else:
+                sum_of_amplitude += np.abs(last - white)
+                last = white
+        return sum_of_amplitude
+
+    '''def result_calculation(self, img1, img1_nr, img2, img2_nr):
         sum_of_lengths = []
         for i in range(img1.shape[1]):
             white = 0
@@ -129,6 +146,7 @@ class ImageClassifier:
             sum_of_lengths.append(white)
         result = np.var(sum_of_lengths)
         return result
+        '''
 
 if __name__ == "__main__":
     # number of threads on your computer
