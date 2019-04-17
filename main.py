@@ -34,6 +34,7 @@ class ImageClassifier:
             images_indexes = np.delete(np.arange(self.N), image_no)
             # pairs - image_no with all others
             pairs = list(product([image_no], images_indexes))
+            #print("pairs: ", pairs)
             # get ranking
             ranking = np.array(self.pairs_ranking(pairs))
             print_ranking = list(map(lambda x: str(x[1]), ranking[:,0]))
@@ -71,6 +72,10 @@ class ImageClassifier:
         img = self.cut_image(img)
         # rotate image for feature comparision
         img_up, img_down = self.rotate_basis(img)
+        #plt.imshow(img_up)
+        #plt.show()
+        #plt.imshow(img_down)
+        #plt.show()
         # save the results for feature use
         self.images_up_and_down[img_nr] = {
             self.IMG_UP: img_up,
@@ -113,11 +118,17 @@ class ImageClassifier:
             return img.copy(), np.rot90(img,2).copy()
 
     def result_calculation(self, img1, img1_nr, img2, img2_nr):
-        # io.imshow(img1)
-        # io.show()
-        # io.imshow(img2)
-        # io.show()
-        return 0
+        sum_of_lengths = []
+        for i in range(img1.shape[1]):
+            white = 0
+            for j in range(img1.shape[0]):
+                if img1[j][i] > 0.01:
+                    white += img1[j][i]
+                if img2[j][i] > 0.01:
+                    white += img2[j][i]
+            sum_of_lengths.append(white)
+        result = np.var(sum_of_lengths)
+        return result
 
 if __name__ == "__main__":
     # number of threads on your computer
