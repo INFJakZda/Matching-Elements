@@ -1,21 +1,18 @@
 import matplotlib.pyplot as plt
 import sys
 import os
-import re
 from itertools import product
-# from multiprocessing.dummy import Pool as ThreadPool 
 
 import cv2
 import numpy as np
 
 from skimage import io
-from skimage.transform import rotate, resize, rescale
-from skimage.util import img_as_bool, img_as_float, pad, invert, img_as_ubyte
-from skimage.morphology import square, closing, dilation
-from skimage.color import gray2rgb, rgb2gray
+from skimage.transform import rotate, resize
+from skimage.util import img_as_ubyte
+from skimage.morphology import square, closing
 
 class ImageClassifier:
-    def __init__(self, N, data_path, no_threads):
+    def __init__(self, N, data_path):
         self.N = N
         self.data_path = data_path
         # results of pairs of objects
@@ -26,8 +23,6 @@ class ImageClassifier:
         self.IMG_UP = "img_up"
         self.IMG_DOWN = "img_down"
 
-        # self.pool = ThreadPool(no_threads)
-        
     def process_images(self):
         for image_no in range(self.N):
             # indexes of all images without image_no
@@ -57,7 +52,7 @@ class ImageClassifier:
         img2 = self.prepare_image(img2_path, pair[1])[self.IMG_DOWN]
 
         score = self.result_calculation(img1, pair[0], img2, pair[1])
-        self.scores_pair[pair] = score
+        self.scores_pair[(pair[0], pair[1])] = score
         return (pair, score)
 
     def prepare_image(self, img_path, img_nr):
@@ -149,9 +144,6 @@ class ImageClassifier:
         '''
 
 if __name__ == "__main__":
-    # number of threads on your computer
-    no_threads = 8
-
     # error - bad number of args
     if len(sys.argv) != 3:
         print(os.path.basename(sys.argv[0]) + " <path> <N>")
@@ -162,5 +154,5 @@ if __name__ == "__main__":
     N = int(sys.argv[2])
     
     # create & run classifier
-    classifier = ImageClassifier(N, data_path, no_threads)
+    classifier = ImageClassifier(N, data_path)
     classifier.process_images()
