@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import sys
 import os
 from itertools import product
@@ -29,14 +28,14 @@ class ImageClassifier:
             images_indexes = np.delete(np.arange(self.N), image_no)
             # pairs - image_no with all others
             pairs = list(product([image_no], images_indexes))
-            #print("pairs: ", pairs)
             # get ranking
             ranking = np.array(self.pairs_ranking(pairs))
+            # print ranking
             print_ranking = list(map(lambda x: str(x[1]), ranking[:,0]))
             print(' '.join(print_ranking))
 
     def pairs_ranking(self, pairs):
-        # multiprocessing result comparision
+        # result comparision
         results = map(self.result_comparison, pairs)
         # return sorted tuples ((pair), result)
         return sorted(results, key = lambda x: x[1])
@@ -60,17 +59,13 @@ class ImageClassifier:
         if img_nr in self.images_up_and_down:
             return self.images_up_and_down[img_nr]
         # read image
-        img = io.imread(img_path)
+        img = cv2.imread(img_path, 0)
         # find a basis of the image and set image to it
         img = self.rotate_image(img)
         # cut image from rotated img
         img = self.cut_image(img)
         # rotate image for feature comparision
         img_up, img_down = self.rotate_basis(img)
-        #plt.imshow(img_up)
-        #plt.show()
-        #plt.imshow(img_down)
-        #plt.show()
         # save the results for feature use
         self.images_up_and_down[img_nr] = {
             self.IMG_UP: img_up,
@@ -79,26 +74,28 @@ class ImageClassifier:
         return self.images_up_and_down[img_nr]
 
     def rotate_image(self, img):
-        img = img_as_ubyte(closing(img, square(5)))
-        _, thresh = cv2.threshold(img,20,255,0)
-        _, lc, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        assert len(lc) == 1
-        rect = cv2.minAreaRect(lc[0])
+        rect = self.get_min_rect(img)
         img = rotate(img, rect[2], resize = True)
-        return img
+        return img_as_ubyte(closing(img, square(5)))
     
     def cut_image(self, img):
-        img = img_as_ubyte(img)
-        _, thresh = cv2.threshold(img,20,255,0)
-        thresh = img_as_ubyte(closing(thresh, square(5)))
-        _, lc, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        assert len(lc) == 1
-        rect = cv2.minAreaRect(lc[0])
+        rect = self.get_min_rect(img)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
         min_y, max_y = min(box[:,1]), max(box[:,1])
         min_x, max_x = min(box[:,0]), max(box[:,0])
-        return img[min_y:max_y,min_x:max_x]
+        img = img[min_y:max_y,min_x:max_x]
+        return img
+
+    def get_min_rect(self, img):
+        _, thresh = cv2.threshold(img,20,255,0)
+        _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        biggest_contour = contours[0]
+        if len(contours) > 1:
+            # print("WARNING")
+            contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
+            biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+        return cv2.minAreaRect(biggest_contour)
 
     def rotate_basis(self, img):
         if img.shape[0]> img.shape[1]:
