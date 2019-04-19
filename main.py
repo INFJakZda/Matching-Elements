@@ -98,16 +98,36 @@ class ImageClassifier:
         return cv2.minAreaRect(biggest_contour)
 
     def rotate_basis(self, img):
-        if img.shape[0]> img.shape[1]:
-            img = np.rot90(img).copy()
-        img = resize(img,(100,150))
-        h, _ = img.shape
+        
+        h, w = img.shape
         upper_z = np.count_nonzero(img[0:int(h/2)])
         bottom_z = np.count_nonzero(img[int(h/2):h])
-        if bottom_z < upper_z:
-            return np.rot90(img, 2).copy(), img.copy()
-        else:
+        left_z = np.count_nonzero(img[:,0:int(w/2)])
+        right_z = np.count_nonzero(img[:,int(w/2):w])
+        # print(upper_z, bottom_z, left_z, right_z)
+        # print(max(upper_z, bottom_z, left_z, right_z))
+        max_z = max(upper_z, bottom_z, left_z, right_z)
+        if right_z == max_z:
+            img = np.rot90(img).copy()
+            img = resize(img,(100,150))
             return img.copy(), np.rot90(img,2).copy()
+        elif left_z == max_z:
+            img = np.rot90(img).copy()
+            img = resize(img,(100,150))
+            return np.rot90(img,2).copy(), img.copy()
+        elif bottom_z == max_z:
+            img = resize(img,(100,150))
+            return np.rot90(img, 2).copy(), img.copy()
+        elif upper_z == max_z:
+            img = resize(img,(100,150))
+            return img.copy(), np.rot90(img,2).copy()
+        else:
+            print("WARNING")
+            return 0
+
+        # if img.shape[0]> img.shape[1]:
+        #     img = np.rot90(img).copy()
+        # img = resize(img,(100,150))
 
     def result_calculation(self, img1, img1_nr, img2, img2_nr):
         sum_of_amplitude = 0
