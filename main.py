@@ -113,7 +113,7 @@ class ImageClassifier:
         sum_of_amplitude = 0
         last = 0
         for i in range(img1.shape[1]):
-            white = np.count_nonzero(img1[:, i]) + np.count_nonzero(img2[:, i])
+            white = np.sum(img1[:, i][np.where(img1[:, i] > 0)]) + np.sum(img2[:, i][np.where(img2[:, i] > 0)])
             if last == 0:
                 last = white
             else:
