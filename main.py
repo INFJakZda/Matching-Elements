@@ -104,8 +104,6 @@ class ImageClassifier:
         bottom_z = np.count_nonzero(img[int(h/2):h])
         left_z = np.count_nonzero(img[:,0:int(w/2)])
         right_z = np.count_nonzero(img[:,int(w/2):w])
-        # print(upper_z, bottom_z, left_z, right_z)
-        # print(max(upper_z, bottom_z, left_z, right_z))
         max_z = max(upper_z, bottom_z, left_z, right_z)
         if right_z == max_z:
             img = np.rot90(img).copy()
@@ -124,10 +122,6 @@ class ImageClassifier:
         else:
             print("WARNING")
             return 0
-
-        # if img.shape[0]> img.shape[1]:
-        #     img = np.rot90(img).copy()
-        # img = resize(img,(100,150))
 
     def result_calculation(self, img1, img1_nr, img2, img2_nr):
         sum_of_amplitude = 0
